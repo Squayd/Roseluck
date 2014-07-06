@@ -5,8 +5,15 @@
 
 import pifacedigitalio
 
-def turnoff():
-  print ('Turn off')
+def turnoff(faceoff: pifacedigitalio.core.PiFaceDigital, valves = 0):
+  if ((valves < 0) or (valves > 2)):
+    print ("Invalid valves in turnoff function")
+    return 1
+  if ((valves == 1) or (valves == 0)):
+    faceoff.relays[0].turn_off()
+  if ((valves == 2) or (valves == 0)):
+    faceoff.relays[1].turn_off()
+  return 0
 
 def systemtest():
   print ('System test')
@@ -16,6 +23,7 @@ def runstation():
 
 if __name__ == "__main__":
   option = 1
+  face = pifacedigitalio.PiFaceDigital()
   #present a basic menu
   while (option != 3):
     print ("Roseluck control menu:")
@@ -37,7 +45,7 @@ if __name__ == "__main__":
     elif (option == 2):
       runstation()
     elif (option == 3):
-      turnoff()
+      turnoff(face)
       exit()
     else:
       print ("")

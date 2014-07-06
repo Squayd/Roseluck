@@ -8,7 +8,7 @@ from time import sleep
 
 #function to turn off valves, either zone 1 or zone 2 by int.
 #pass 0 or nothing to turn both valves off.
-def turnoff(faceoff: pifacedigitalio.core.PiFaceDigital, valves = 0):
+def turnoff(faceoff = pifacedigitalio.PiFaceDigital(), valves = 0):
   if ((valves < 0) or (valves > 2)):
     print ("Invalid valves in turnoff function")
     return 1
@@ -18,32 +18,38 @@ def turnoff(faceoff: pifacedigitalio.core.PiFaceDigital, valves = 0):
     faceoff.relays[1].turn_off()
   return 0
 
+#function to trigger a valve for a duration
+def runstation(valve, duration):
+  stations = pifacedigitalio.PiFaceDigital()
+  if ((0 < valve < 3) and (duration > 0)):
+    print ("Activating valve " + str(valve) + " for " + str(duration) + " seconds.")
+    stations.relays[valve - 1].turn_on()
+    sleep(duration)
+    turnoff(stations, valve)
+  else:
+    print ("Invalid valve or duration in runstation")
+    print ("Attempted to run station " + str(valve) + " for " + str(duration) + "seconds.")
+    return 1
+  return 0
+
 #function to test the system. Engage each zone for five minutes.
-def systemtest(system: pifacedigitalio.core.PiFaceDigital):
+def systemtest():
   print ('System test:')
   print ("Triggering zone 1 for 5 minutes...")
-  system.relays[0].turn_on()
-  sleep(300)
-  turnoff (system, 1)
+  runstation (1, 300)
   print ("Triggering zone 2 for 5 minutes...")
-  system.relays[0].turn_on()
-  sleep(300)
-  turnoff (system)
+  runstation (2, 300)
   print ("System test complete")
   print ("____________________")
 
-def runstation():
-  print ('Run station')
-
 if __name__ == "__main__":
   option = 1
-  face = pifacedigitalio.PiFaceDigital()
   #present a basic menu
   while (option != 3):
     print ("Roseluck control menu:")
     print ("1. Test the system (each valve open for 5 minutes)")
     print ("2. Run a station for a duration")
-    print ("3. Turn system off, resume schedule, and exit")
+    print ("3. Resume schedule and exit")
     print ("")
     inp = input ("What would you like to do?: ")
     try: #Check for bad input
@@ -55,11 +61,28 @@ if __name__ == "__main__":
       option = 0
       continue
     if (option == 1):
-      systemtest(face)
+      systemtest()
     if (option == 2):
-      runstation()
+      print("")
+      inp = input("Which station would you like to run? (1, 2): ")
+      try: #check for bad input again
+        stat = int(inp)
+      except TypeError:
+        print("")
+        print("Invalid selection")
+        print("_________________")
+        continue
+      inp = input ("How many minutes would you like to run it?: ")
+      try: #type check
+        dur = int(inp) * 60
+      except TypeError:
+        print("")
+        print("Invalid selectin")
+        print("________________")
+        continue
+      runstation(stat,dur)
     elif (option == 3):
-      turnoff(face)
+      turnoff()
       exit()
     else:
       print ("")

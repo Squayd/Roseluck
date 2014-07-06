@@ -4,7 +4,10 @@
 #Provides command line scheduling for drip irrigation
 
 import pifacedigitalio
+from time import sleep
 
+#function to turn off valves, either zone 1 or zone 2 by int.
+#pass 0 or nothing to turn both valves off.
 def turnoff(faceoff: pifacedigitalio.core.PiFaceDigital, valves = 0):
   if ((valves < 0) or (valves > 2)):
     print ("Invalid valves in turnoff function")
@@ -15,8 +18,19 @@ def turnoff(faceoff: pifacedigitalio.core.PiFaceDigital, valves = 0):
     faceoff.relays[1].turn_off()
   return 0
 
-def systemtest():
-  print ('System test')
+#function to test the system. Engage each zone for five minutes.
+def systemtest(system: pifacedigitalio.core.PiFaceDigital):
+  print ('System test:')
+  print ("Triggering zone 1 for 5 minutes...")
+  system.relays[0].turn_on()
+  sleep(300)
+  turnoff (system, 1)
+  print ("Triggering zone 2 for 5 minutes...")
+  system.relays[0].turn_on()
+  sleep(300)
+  turnoff (system)
+  print ("System test complete")
+  print ("____________________")
 
 def runstation():
   print ('Run station')
@@ -41,8 +55,8 @@ if __name__ == "__main__":
       option = 0
       continue
     if (option == 1):
-      systemtest()
-    elif (option == 2):
+      systemtest(face)
+    if (option == 2):
       runstation()
     elif (option == 3):
       turnoff(face)

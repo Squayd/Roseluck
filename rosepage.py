@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
 from flask import Flask
+from flask_bootstrap import Bootstrap
 
-hip = Flask(__name__)
+def create_app(configfile=None):
+  hip = Flask(__name__)
+  Bootstrap(hip)
+  @hip.route('/Roseluck')
 
-@hip.route('/')
-
-def hello_world():
-  return 'Hello world!'
+  def showcontent():
+    return render_template('rosepage.html')
+  
+  return hip
 
 if __name__ == '__main__':
-  hip.run(host='0.0.0.0')
+  create_app().run(host='0.0.0.0')

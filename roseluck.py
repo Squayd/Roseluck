@@ -25,10 +25,10 @@ def runstation(valve, duration):
     print ("Activating valve " + str(valve) + " for " + str(duration) + " seconds.")
     stations.relays[valve - 1].turn_on()
     for i in range(duration, 0, -1):
-      print ("                                                    ", end = '\r')
-      print ("Seconds remaining: %s" % i, end = '\r')
+     # print ("                                                    ", end = '\r')
+     # print ("Seconds remaining: %s" % i, end = '\r')
       sleep(1)
-    print("")
+    #print("")
     turnoff(stations, valve)
   else:
     print ("Invalid valve or duration in runstation")

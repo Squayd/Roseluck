@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import roseluck
+from roseluck import Roseluck
 from datetime import datetime
+from time import sleep
 
 if (__name__ == "__main__"):
-  print (str(datetime.now()));
-  roseluck.runstation(2,3600)
+  rose = Roseluck()
+  print (str(datetime.now()))
+  rose.runstation(2,3600)

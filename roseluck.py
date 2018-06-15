@@ -3,50 +3,81 @@
 #Irrigation controler component of Pinkie home automation
 #Provides command line scheduling for drip irrigation
 
-import pifacedigitalio
+from gpiozero import DigitalOutputDevice
 from time import sleep
+from threading import Thread
 
-#function to turn off valves, either zone 1 or zone 2 by int.
-#pass 0 or nothing to turn both valves off.
-def turnoff(faceoff = pifacedigitalio.PiFaceDigital(), valves = 0):
-  if ((valves < 0) or (valves > 2)):
-    print ("Invalid valves in turnoff function")
-    return 1
-  if ((valves == 1) or (valves == 0)):
-    faceoff.relays[0].turn_off()
-  if ((valves == 2) or (valves == 0)):
-    faceoff.relays[1].turn_off()
-  return 0
+class ValveWorker(Thread):
+  def __init__(self, rose, valve, duration):
+    Thread.__init__(self)
+    self.rose = rose
+    self.valve = valve
+    self.duration = duration
 
-#function to trigger a valve for a duration
-def runstation(valve, duration):
-  stations = pifacedigitalio.PiFaceDigital()
-  if ((0 < valve < 3) and (duration > 0)):
-    print ("Activating valve " + str(valve) + " for " + str(duration) + " seconds.")
-    stations.relays[valve - 1].turn_on()
-    for i in range(duration, 0, -1):
-     # print ("                                                    ", end = '\r')
-     # print ("Seconds remaining: %s" % i, end = '\r')
-      sleep(1)
-    #print("")
-    turnoff(stations, valve)
-  else:
-    print ("Invalid valve or duration in runstation")
-    print ("Attempted to run station " + str(valve) + " for " + str(duration) + "seconds.")
-    return 1
-  return 0
+  def run(self):
+    self.rose.turnon(self.valve)
+    sleep(self.duration)
+    self.rose.turnoff(self.valve)
 
-#function to test the system. Engage each zone for five minutes.
-def systemtest():
-  print ('System test:')
-  print ("Triggering zone 1 for 5 minutes...")
-  runstation (1, 300)
-  print ("Triggering zone 2 for 5 minutes...")
-  runstation (2, 300)
-  print ("System test complete")
-  print ("____________________")
+class Roseluck:
+  #gpizero uses broadcom pin numbers
+  VALVE_1_PIN = 23
+  VALVE_2_PIN = 24
+  
+  def __init__(self, v1pin = VALVE_1_PIN, v2pin = VALVE_2_PIN):
+    self.valve1 = DigitalOutputDevice(v1pin)
+    self.valve2 = DigitalOutputDevice(v2pin)
+    self.valves = [self.valve1, self.valve2]
+    self.valve1thread = None
+    self.valve2thread = None
+    self.threads = [self.valve1thread, self.valve2thread]
+
+  #function to turn off valves, either zone 1 or zone 2 by int.
+  #pass 0 or nothing to turn both valves off.
+  def turnoff(self, valve = 0):
+    if ((valve < 0) or (valve > 2)):
+      print ("Invalid valves in turnoff function")
+      return 1
+    if ((valve == 1) or (valve == 0)):
+      self.valve1.off()
+    if ((valve == 2) or (valve == 0)):
+      self.valve2.off()
+    return 0
+
+  #Turns on the passed valve as long as it's valid
+  def turnon(self, valve):
+    if (valve < 1 or valve > 2):
+      print("Invalid valve in turnon function")
+      return 1
+    self.valves[valve-1].on()
+
+  #function to trigger a valve for a duration
+  def runstation(self, valve, duration):
+    if valve < 1 or valve > 2:
+      print ("Invalid valve or duration in runstation")
+      print ("Attempted to run station " + str(valve) + " for " + str(duration) + "seconds.")
+      return 1
+    if self.threads[valve-1] is not None and self.threads[valve - 1].is_alive():
+      print ("Valve " + str(valve) + " is already active.")
+      return 2
+    else:
+      self.threads[valve-1] = ValveWorker(self, valve, duration)
+      #self.threads[valve-1].daemon = True
+      self.threads[valve-1].start()
+    return 0
+
+  #function to test the system. Engage each zone for five minutes.
+  def systemtest(self):
+    print ('System test:')
+    print ("Triggering zone 1 for 5 minutes...")
+    self.runstation (1, 300)
+    print ("Triggering zone 2 for 5 minutes...")
+    self.runstation (2, 300)
+    print ("System test complete")
+    print ("____________________")
 
 if __name__ == "__main__":
+  rose = Roseluck()
   option = 1
   #present a basic menu
   while (option != 3):
@@ -65,7 +96,7 @@ if __name__ == "__main__":
       option = 0
       continue
     if (option == 1):
-      systemtest()
+      rose.systemtest()
     if (option == 2):
       print("")
       inp = input("Which station would you like to run? (1, 2): ")
@@ -84,9 +115,9 @@ if __name__ == "__main__":
         print("Invalid selectin")
         print("________________")
         continue
-      runstation(stat,dur)
+      rose.runstation(stat,dur)
     elif (option == 3):
-      turnoff()
+      rose.turnoff()
       exit()
     else:
       print ("")
